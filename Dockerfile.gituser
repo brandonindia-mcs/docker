@@ -28,7 +28,8 @@ RUN useradd -d $USERHOME -s /bin/bash -m $THISUSER -u 1000 -g 1000
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL"\
 >>/etc/sudoers
 COPY assets.docker/known_hosts $KNOWN_HOSTS
-RUN --mount=type=secret,id=<REPLACE_WITH_KEY_NAME> cat /run/secrets/$SSH_PRIVATE_KEY > $FULL_PATH_TO_SSH_PRIVATE_KEY
+# RUN --mount=type=secret,id=<REPLACE_WITH_KEY_NAME> cat /run/secrets/$SSH_PRIVATE_KEY > $FULL_PATH_TO_SSH_PRIVATE_KEY
+RUN --mount=type=secret,id=KJKPX83ZX37RQN6YMITPQAH3 cat /run/secrets/$SSH_PRIVATE_KEY > $FULL_PATH_TO_SSH_PRIVATE_KEY
 
 FROM secureuser as gituser
 ENV GIT_SSH=$USERHOME/bin/git-ssh
@@ -98,10 +99,6 @@ export PS1="\\[\\033[1;34m\\]\\u\\[\\033[0m\\]@\\[\\033[1;31m\\]\\h:\\[\\033[0;3
 '\
 >>$USERHOME/.bashrc
 
-FROM user as jq
-RUN sudo apt-get install -y jq \
-&& sudo apt-get clean
-
 FROM user as bashhistory
 ARG DOCKER_ENV
 ENV DOCKER_ENV=$DOCKER_ENV
@@ -111,11 +108,12 @@ if touch ${HOME}/history/${DOCKER_ENV}.history;then export HISTFILE="${HOME}/his
 >>$USERHOME/.bashrc
 
 
-FROM jq as end4
+FROM bashhistory as end4
 RUN echo '\n\
 function unindex { /usr/bin/git update-index --skip-worktree "${*}"; }\n\
 function reindex { /usr/bin/git update-index --no-skip-worktree "${*}"; }\n\
 '\
 >>$USERHOME/.bashrc
 
-RUN sudo apt-get update -qq
+RUN sudo apt-get update -qq \
+&& sudo apt-get clean
