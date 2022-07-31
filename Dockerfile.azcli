@@ -88,16 +88,3 @@ RUN echo -e "\n"\
 RUN date=$(date) && echo -e "echo -e \"\\\nLast Build Date: ${date}\""\
 >>$USERHOME/.bashrc
 
-# FROM gitstuff as vol
-# VOLUME [ "/root/.ssh" ]
-
-
-# RUN echo -e "\n"\
-# "echo|cat >PS1.sh <<EOF\n"\
-# "#!/bin/sh\n"\
-# "echo -e export PS1=\"\[\033[1;32m\]\u\[\033[0m\]@\[\033[1;31m\]\h \[\033[0;37m\]\W\[\033[1;301m\]$\[\033[0m\] \" >>/root/.bashrc\n"\
-# "EOF\n"\
-# "\n"\
-# "chmod 744 /root/PS1.sh\n"\
-# \
-# >>$USERHOME/.bashrc
