@@ -1,0 +1,103 @@
+FROM mcr.microsoft.com/azure-cli AS extensions
+CMD [ "/bin/bash" ]
+RUN apk update && apk upgrade
+RUN az extension add --name azure-devops \
+&& az extension add --name logic
+FROM extensions AS bottom
+ARG THISUSER=root
+ARG HOMEDIR=
+ARG USERHOME=$HOMEDIR/$THISUSER
+WORKDIR $USERHOME
+COPY assets.docker/bashrc.uuid /tmp/uuid
+RUN cat /tmp/uuid >>$USERHOME/.bashrc && rm -rf /tmp/uuid
+ENV HISTFILESIZE=-1
+RUN cp /usr/share/zoneinfo/America/Chicago /etc/localtime
+RUN echo -e \
+"apk update && apk upgrade\n"\
+"grep -i pretty /etc/os-release\n"\
+"echo && az version -o table\n"\
+"echo && az extension list -o table --query \"[].{name:name,version:version}\"\n"\
+"alias ls=\"/bin/ls -Altr --color=auto\"\n"\
+"alias azt=\"az login -t \\\${AZTENANT} >/dev/null && azwho\"\n"\
+"alias azp=\"az login --service-principal -u \\\${SUPER} -t \\\${AZTENANT} -p \\\${CERT} >/dev/null && azwho\"\n"\
+"alias azwho=\"az account show --query \\\"{Subscription:name,Type:user.type,User:user.name}\\\" -o table\"\n"\
+"echo -e \"\\\naz login -t \\\${AZTENANT} \\ \n && az account set --subscription \"VSBRI\"\\\n\""\
+>>$USERHOME/.bashrc
+# alias azwho="az account show --query \\\"{Subscription:name,Type:user.type,UserName:user.name}\\\" -o table"\n\
+
+RUN echo -e \
+"function prune { sign_in && rglist=./rg.list && if [ ! -f \$rglist ];then echo \$rglist not found && return 1;fi && for guid in \$(cat \$rglist);do deleterg \$guid; sed -i -e "/\$guid/d" \$rglist;done }\n"\
+"function signin { az login --service-principal -u \${SUPER} -t \${AZTENANT} -p \${CERT} >/dev/null && az account show --query \"{Type:user.type,User:user.name,Subscription:name}\" ; }\n"\
+"function signout { az logout; }\n"\
+"function deleterg { for rg in \$*; do echo deleting \$rg && az group delete -n \$rg -y 2>/dev/null; done; }\n"\
+\
+"for alias_key in \${!BASH_ALIASES[@]}; do echo \$alias_key = \${BASH_ALIASES[\$alias_key]}; done\n"\
+"echo -e \"\ndefault super is: \n\t\${SUPERNAME}\n\t\${AZTENANT}\n\t\${CERT}\"\n"\
+\
+>>$USERHOME/.bashrc
+
+FROM bottom as gitstuff
+
+ARG GIT_SSH=$USERHOME/bin/git-ssh
+ENV GIT_SSH=$GIT_SSH
+COPY assets.docker/.gitignore_global $USERHOME/.gitignore_global
+
+RUN mkdir -p $USERHOME/bin\
+&& echo -e "\n"\
+"echo|cat >.gitconfig <<EOF\n"\
+"# This is Git's per-user configuration file.\n"\
+"[user]\n"\
+"# Please adapt and uncomment the following lines:\n"\
+"        name = Brandon Ryan India\n"\
+"        email = brandonindia@microsoft.com\n"\
+"[advice]\n"\
+"        addIgnoredFile = false\n"\
+"[core]\n"\
+"        excludesfile = ~/.gitignore_global\n"\
+"        editor = vim\n"\
+"[ssh]\n"\
+"        identity =  ~/.ssh/brandonindia-isd_rsa\n"\
+"[commit]\n"\
+"        template = ~/.stCommitMsg\n"\
+"[pull]\n"\
+"        rebase = false\n"\
+"EOF\n"\
+"\n"\
+\
+>>$USERHOME/.bashrc
+
+RUN echo -e "\n"\
+"echo|cat >$USERHOME/bin/git-ssh <<EOF\n"\
+"#!/bin/sh\n"\
+"\n"\
+"#WORKS IN COMBINATION WITH GIT_SSH SESSION & [SSH] CLAUSE FROM GBL CONFIG\n"\
+"#https://superuser.com/questions/232373/how-to-tell-git-which-private-key-to-use\n"\
+"ssh -i \\\$(git config --get ssh.identity) -F /dev/null -p 22 \\\$*\n"\
+"EOF\n"\
+"\n"\
+\
+>>$USERHOME/.bashrc
+
+RUN echo -e "\n"\
+"chmod 644 $USERHOME/.gitignore_global && chmod 755 $GIT_SSH\n"\
+"function unindex { /usr/bin/git update-index --skip-worktree \"\${*}\"; }\n"\
+"function reindex { /usr/bin/git update-index --no-skip-worktree \"\${*}\"; }\n"\
+\
+>>$USERHOME/.bashrc
+
+RUN date=$(date) && echo -e "echo -e \"\\\nLast Build Date: ${date}\""\
+>>$USERHOME/.bashrc
+
+# FROM gitstuff as vol
+# VOLUME [ "/root/.ssh" ]
+
+
+# RUN echo -e "\n"\
+# "echo|cat >PS1.sh <<EOF\n"\
+# "#!/bin/sh\n"\
+# "echo -e export PS1=\"\[\033[1;32m\]\u\[\033[0m\]@\[\033[1;31m\]\h \[\033[0;37m\]\W\[\033[1;301m\]$\[\033[0m\] \" >>/root/.bashrc\n"\
+# "EOF\n"\
+# "\n"\
+# "chmod 744 /root/PS1.sh\n"\
+# \
+# >>$USERHOME/.bashrc
