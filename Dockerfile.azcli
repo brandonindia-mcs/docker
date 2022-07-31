@@ -42,21 +42,25 @@ ARG GIT_SSH=$USERHOME/bin/git-ssh
 ENV GIT_SSH=$GIT_SSH
 COPY assets.docker/.gitignore_global $USERHOME/.gitignore_global
 
+ARG myname
+ARG myemail
+ARG mykeypath
 RUN mkdir -p $USERHOME/bin\
 && echo -e "\n"\
+"if [ -z \$myname ];then myname=anonymous;fi\n"\
 "echo|cat >.gitconfig <<EOF\n"\
 "# This is Git's per-user configuration file.\n"\
 "[user]\n"\
 "# Please adapt and uncomment the following lines:\n"\
-"        name = Brandon Ryan India\n"\
-"        email = brandonindia@microsoft.com\n"\
+"        name = \$myname\n"\
+"        email = \$myemail\n"\
 "[advice]\n"\
 "        addIgnoredFile = false\n"\
 "[core]\n"\
 "        excludesfile = ~/.gitignore_global\n"\
 "        editor = vim\n"\
 "[ssh]\n"\
-"        identity =  ~/.ssh/brandonindia-isd_rsa\n"\
+"        identity =  \$mykeypath\n"\
 "[commit]\n"\
 "        template = ~/.stCommitMsg\n"\
 "[pull]\n"\
