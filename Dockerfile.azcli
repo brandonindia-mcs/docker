@@ -30,6 +30,7 @@ RUN echo -e \
 "function signin { az login --service-principal -u \${SUPER} -t \${AZTENANT} -p \${CERT} >/dev/null && az account show --query \"{Type:user.type,User:user.name,Subscription:name}\" ; }\n"\
 "function signout { az logout; }\n"\
 "function deleterg { for rg in \$*; do echo deleting \$rg && az group delete -n \$rg -y 2>/dev/null; done; }\n"\
+"function makerg { signin && az group create -n \$1 -l ${AZREGION}; signout; }\n"\
 "function bicep { signin && az deployment group create -n \$rg -g \$rg --template-file main.bicep --parameters @parameters.main.json \$*; signout; }\n"\
 \
 "for alias_key in \${!BASH_ALIASES[@]}; do echo \$alias_key = \${BASH_ALIASES[\$alias_key]}; done\n"\
