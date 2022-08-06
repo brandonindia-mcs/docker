@@ -38,7 +38,15 @@ RUN echo -e \
 \
 >>$USERHOME/.bashrc
 
-FROM bottom as gitstuff
+RUN date=$(date) && echo -e "echo -e \"\\\nLast Build Date: ${date}\""\
+>>$USERHOME/.bashrc
+
+FROM bottom as final
+RUN echo -e "\n"\
+"if [ -x /root/codestore/PS1.sh ];then if [ \$(grep -E '^export PS1' /root/.bashrc|wc -l) -eq 0 ];then /root/codestore/PS1.sh;fi;fi\n"\
+>>$USERHOME/.bashrc
+
+FROM final as gitstuff
 
 ARG GIT_SSH=$USERHOME/bin/git-ssh
 ENV GIT_SSH=$GIT_SSH
@@ -87,13 +95,4 @@ RUN echo -e "\n"\
 "function unindex { /usr/bin/git update-index --skip-worktree \"\${*}\"; }\n"\
 "function reindex { /usr/bin/git update-index --no-skip-worktree \"\${*}\"; }\n"\
 \
->>$USERHOME/.bashrc
-
-RUN date=$(date) && echo -e "echo -e \"\\\nLast Build Date: ${date}\""\
->>$USERHOME/.bashrc
-
-
-FROM gitstuff as final
-RUN echo -e "\n"\
-"if [ -x /root/codestore/PS1.sh ];then if [ \$(grep -E '^export PS1' /root/.bashrc|wc -l) -eq 0 ];then /root/codestore/PS1.sh;fi;fi\n"\
 >>$USERHOME/.bashrc
