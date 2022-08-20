@@ -14,14 +14,15 @@ ENV HISTFILESIZE=-1
 RUN cp /usr/share/zoneinfo/America/Chicago /etc/localtime
 RUN echo -e \
 "apk update && apk upgrade\n"\
-"grep -i pretty /etc/os-release\n"\
+"echo && grep -i pretty /etc/os-release\n"\
 "echo && az version -o table\n"\
 "echo && az extension list -o table --query \"[].{name:name,version:version}\"\n"\
 "alias ls=\"/bin/ls -Altr --color=auto\"\n"\
 "alias azt=\"az login -t \\\${AZTENANT} >/dev/null && azwho\"\n"\
 "alias azp=\"az login --service-principal -u \\\${SUPER} -t \\\${AZTENANT} -p \\\${CERT} >/dev/null && azwho\"\n"\
 "alias azwho=\"az account show --query \\\"{Subscription:name,Type:user.type,User:user.name}\\\" -o table\"\n"\
-"echo -e \"\\\naz login -t \\\${AZTENANT} \\ \n && az account set --subscription \"VSBRI\"\\\n\""\
+"alias getsuper=\"az ad sp list --spn \\\$SUPER --query \\\"[].{SPN:appId,Name:displayName,Type:servicePrincipalType}\\\" -o table\"\n"\
+\
 >>$USERHOME/.bashrc
 # alias azwho="az account show --query \\\"{Subscription:name,Type:user.type,UserName:user.name}\\\" -o table"\n\
 
@@ -33,8 +34,14 @@ RUN echo -e \
 "function makerg { signin && az group create -n \$1 -l ${AZREGION}; signout; }\n"\
 "function bicep { signin && az deployment group create -n \$rg -g \$rg --template-file main.bicep --parameters @parameters.main.json \$*; signout; }\n"\
 \
+"echo -e \"\\\\\\\n\\\\\\\nCommands & Aliases...\"\n"\
 "for alias_key in \${!BASH_ALIASES[@]}; do echo \$alias_key = \${BASH_ALIASES[\$alias_key]}; done\n"\
-"echo -e \"\ndefault super is: \n\t\${SUPERNAME}\n\t\${AZTENANT}\n\t\${CERT}\"\n"\
+\
+>>$USERHOME/.bashrc
+
+RUN echo -e \
+"echo -e \"\\\naz login -t \\\${AZTENANT} \\ \n && az account set --subscription \"\\\${TENANT_SUBSCRIPTION_NAME}\"\\\n\"\n"\
+"echo -e \"\ndefault super is: \n\t\${SUPER}\n\t\${AZTENANT}\n\t\${CERT}\"\n"\
 \
 >>$USERHOME/.bashrc
 
@@ -75,6 +82,8 @@ RUN mkdir -p $USERHOME/bin\
 "        template = ~/.stCommitMsg\n"\
 "[pull]\n"\
 "        rebase = false\n"\
+"[credential]\n"\
+"        useHttpPath = true\n"\
 "EOF\n"\
 \
 >>$USERHOME/.bashrc
@@ -91,8 +100,13 @@ RUN echo -e "\n"\
 >>$USERHOME/.bashrc
 
 RUN echo -e "\n"\
-"chmod 644 $USERHOME/.gitignore_global && chmod 755 $GIT_SSH\n"\
+"chmod 644 $USERHOME/.gitignore_global && chmod 755 \$GIT_SSH\n"\
 "function unindex { /usr/bin/git update-index --skip-worktree \"\${*}\"; }\n"\
 "function reindex { /usr/bin/git update-index --no-skip-worktree \"\${*}\"; }\n"\
+"function hardlink_working_directory { if [ ! -z \$1 ] && [ -d \$1 ];then src_dir=\$1;else echo pass source directory as arg1 && return \$LINENO; fi && for f in \$(/bin/ls -A);do echo -n \$f && rm \$f && ln \${src_dir}/\${f} && echo \" linked\";done ; }\n"\
 \
 >>$USERHOME/.bashrc
+
+COPY assets.docker/gitprompt-root.sh $USERHOME/gitprompt.sh
+
+#"\"\n\ndefault super is: \n\t\${SUPER}\n\t\${AZTENANT}\n\t\${CERT}\"\n"\
