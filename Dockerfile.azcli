@@ -59,12 +59,14 @@ ARG GIT_SSH=$USERHOME/bin/git-ssh
 ENV GIT_SSH=$GIT_SSH
 COPY assets.docker/.gitignore_global $USERHOME/.gitignore_global
 
-ARG myname
+ARG myfname
+ARG mymname
+ARG mylname
 ARG myemail
 ARG mykeypath
 RUN mkdir -p $USERHOME/bin\
 && echo -e "\n"\
-"if [ -z \$myname ];then myname=anonymous;fi\n"\
+"if [ -z \$myfname ];then myname=anonymous;else myname=\"\$myfname \$mymname \$mylname\";fi\n"\
 "echo|cat >.gitconfig <<EOF\n"\
 "# This is Git's per-user configuration file.\n"\
 "[user]\n"\
@@ -77,7 +79,7 @@ RUN mkdir -p $USERHOME/bin\
 "        excludesfile = ~/.gitignore_global\n"\
 "        editor = vim\n"\
 "[ssh]\n"\
-"        identity =  \$mykeypath\n"\
+"        identity = \$mykeypath\n"\
 "[commit]\n"\
 "        template = ~/.stCommitMsg\n"\
 "[pull]\n"\
