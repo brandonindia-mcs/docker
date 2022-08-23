@@ -67,7 +67,7 @@ ARG mykeypath
 RUN mkdir -p $USERHOME/bin\
 && echo -e "\n"\
 "if [ -z \$myfname ];then myname=anonymous;else myname=\"\$myfname \$mymname \$mylname\";fi\n"\
-"echo|cat >.gitconfig <<EOF\n"\
+"echo|cat >$USERHOME/.gitconfig <<EOF\n"\
 "# This is Git's per-user configuration file.\n"\
 "[user]\n"\
 "# Please adapt and uncomment the following lines:\n"\
