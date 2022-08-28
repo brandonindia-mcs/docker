@@ -70,7 +70,6 @@ RUN mkdir -p $USERHOME/bin\
 "echo|cat >$USERHOME/.gitconfig <<EOF\n"\
 "# This is Git's per-user configuration file.\n"\
 "[user]\n"\
-"# Please adapt and uncomment the following lines:\n"\
 "        name = \$myname\n"\
 "        email = \$myemail\n"\
 "[advice]\n"\
@@ -86,6 +85,8 @@ RUN mkdir -p $USERHOME/bin\
 "        rebase = false\n"\
 "[credential]\n"\
 "        useHttpPath = true\n"\
+"[init]\n"\
+"        defaultBranch = master\n"\
 "EOF\n"\
 \
 >>$USERHOME/.bashrc
