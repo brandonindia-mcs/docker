@@ -53,6 +53,19 @@ RUN echo -e "\n"\
 "if [ -x /root/codestore/PS1.sh ];then if [ \$(grep -E '^export PS1' /root/.bashrc|wc -l) -eq 0 ];then /root/codestore/PS1.sh;fi;fi\n"\
 >>$USERHOME/.bashrc
 
+RUN echo -e '\n\
+function changetext { printf "\e[$1;$2;$3m${*:4}\e[0m " ; }\n\
+function showcolors { for bg in `seq 0 9`; do for fg in `seq 0 9`; do echo -n "`expr $fg` `expr $bg`: " && color `expr $fg` `expr $bg` "Tyler & Corey"; echo; done; done }\n\
+alias colors=showcolors\n\
+function color  { echo -n "$(tput setaf $1;tput setab $2)${3}$(tput sgr 0) "; }\n\
+function println { printf "$1\n" "${@:2}"; }\n\
+function green { changetext 0 34 42 $* ; }\n\
+function yellow { changetext 0 31 43 $* ; }\n\
+function blue { changetext 0 36 44 $*; }\n\
+function cyan { changetext 0 0 46 $*; }\n\
+'\
+>>$USERHOME/.bashrc
+
 FROM final as gitstuff
 
 ARG GIT_SSH=$USERHOME/bin/git-ssh
