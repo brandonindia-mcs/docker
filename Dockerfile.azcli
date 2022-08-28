@@ -55,10 +55,7 @@ RUN echo -e "\n"\
 
 RUN echo -e '\n\
 function changetext { printf "\e[$1;$2;$3m${*:4}\e[0m " ; }\n\
-function showcolors { for bg in `seq 0 9`; do for fg in `seq 0 9`; do echo -n "`expr $fg` `expr $bg`: " && color `expr $fg` `expr $bg` "Tyler & Corey"; echo; done; done }\n\
-alias colors=showcolors\n\
-function color  { echo -n "$(tput setaf $1;tput setab $2)${3}$(tput sgr 0) "; }\n\
-function println { printf "$1\n" "${@:2}"; }\n\
+function println { printf "$1\\n" "${@:2}"; }\n\
 function green { changetext 0 34 42 $* ; }\n\
 function yellow { changetext 0 31 43 $* ; }\n\
 function blue { changetext 0 36 44 $*; }\n\
