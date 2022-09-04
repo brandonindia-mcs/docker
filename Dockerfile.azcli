@@ -1,7 +1,9 @@
 FROM mcr.microsoft.com/azure-cli AS extensions
 CMD [ "/bin/bash" ]
 RUN apk update && apk upgrade
+RUN az config set extension.use_dynamic_install=yes_without_prompt
 RUN az extension add --name azure-devops \
+&& az extension add --name datafactory \
 && az extension add --name logic
 FROM extensions AS bottom
 ARG THISUSER=root
@@ -64,7 +66,42 @@ function grey { changetext 1 39 100 $* ; }\n\
 '\
 >>$USERHOME/.bashrc
 
-FROM final as gitstuff
+FROM final as scripts1
+RUN echo -e '\n\
+function service_principal {\n\
+if [ -z $1 -o -z $2 ]; then echo Usage: $FUNCNAME[0] name location && return 9;fi\n\
+azt\n\
+run=\n\
+username="$1"\n\
+loc="$2"\n\
+certname="${username}${UUID}${run}"\n\
+certstore="${HOME}/keystore/certs"\n\
+kv="${username}ServicePrincipalSecrets${UUID}"\n\
+superuser=${username}User\n\
+scope="/subscriptions/${AZSUB}"\n\
+rg=ServicePrincipal\n\
+\n\
+az group create -n ${rg,,} -l ${loc} && echo created group ${rg,,}\n\
+az keyvault create -n ${kv} -g ${rg} && echo created vault ${kv}\n\
+az keyvault certificate create -n ${certname} --vault-name=${kv} --policy "$(az keyvault certificate get-default-policy)" && echo created cert ${certname}\n\
+az keyvault certificate download -n ${certname} --vault-name ${kv} --file ${certstore}/${certname}.pem \\\n\
+&& openssl x509 -in ${certstore}/${certname}.pem -inform PEM -noout -sha1 -fingerprint && echo -e "got ${certstore}/${certname}.pem\\ndid validation"\n\
+az ad sp create-for-rbac -n ${superuser} --role Owner --scopes ${scope} --cert @${certstore}/${certname}.pem && echo Added ${superuser}\n\
+az keyvault secret download -n ${certname} --file ${certstore}/${certname}.pfx --vault-name ${kv} --encoding base64 \\\n\
+&& openssl pkcs12 -in ${certstore}/${certname}.pfx -passin pass: -out ${certstore}/${certname}.private.pem -nodes \\\n\
+&& chmod 444 ${certstore}/${certname}.private.pem \\\n\
+&& echo -e "got ${certstore}/${certname}.pfx:\\n$(/bin/ls -l ${certstore}/${certname}.private.pem)" \\\n\
+&& export SUPERNAME=$(az ad sp list --display-name ${superuser} --query "[].{x:appDisplayName}" -o tsv) \\\n\
+&& export SUPER=$(az ad sp list --display-name ${superuser} --query "[].{x:appId}" -o tsv) \\\n\
+&& export CERT=${certstore}/${certname}.private.pem\n\
+az ad sp list --display-name ${superuser} --query "[].{Name:appDisplayName,ID:appId}" -o table\n\
+azp && azwho \\\n\
+|| unset $run $username $certname $certstore $kv $superuser $scope $rg $loc\n\
+}\n\
+'\
+>>$USERHOME/.bashrc
+
+FROM scripts1 as scripts2
 
 ARG GIT_SSH=$USERHOME/bin/git-ssh
 ENV GIT_SSH=$GIT_SSH
