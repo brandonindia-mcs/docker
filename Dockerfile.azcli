@@ -34,8 +34,8 @@ RUN echo -e \
 "echo && az version -o table\n"\
 "echo && az extension list -o table --query \"[].{name:name,version:version}\"\n"\
 "alias ls=\"/bin/ls -Altr --color=auto\"\n"\
-"alias azt=\"az login -t \\\${AZTENANT} >/dev/null && azwho\"\n"\
-"alias azp=\"az login --service-principal -u \\\${SUPER} -t \\\${AZTENANT} -p \\\${CERT} >/dev/null && azwho\"\n"\
+"alias azt=\"az login -t \${AZTENANT} >/dev/null && azwho\"\n"\
+"alias azp=\"az login --service-principal -u \${SUPER} -t \${AZTENANT} -p \${CERT} >/dev/null && azwho\"\n"\
 "alias azwho=\"az account show --query \\\"{Subscription:name,Type:user.type,User:user.name}\\\" -o table\"\n"\
 "alias getsuper=\"az ad sp list --spn \\\$SUPER --query \\\"[].{SPN:appId,Name:displayName,Type:servicePrincipalType}\\\" -o table\"\n"\
 \
