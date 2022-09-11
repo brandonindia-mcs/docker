@@ -190,11 +190,14 @@ RUN echo $([ -s $NVM_DIR/nvm.sh ] \
 FROM nodeinstall AS gitconfig
 RUN sudo apt-get update -qq
 
+ARG myfname
+ARG mymname
+ARG mylname
+ARG myemail
+ARG mykeypath
 RUN echo '\n\
-echo|cat >.gitconfig <<EOF\n\
-# This is Git's per-user configuration file.\n\
+echo|cat >$USERHOME/.gitconfig <<EOF\n\
 [user]\n\
-# Please adapt and uncomment the following lines:\n\
         name = $myname\n\
         email = $myemail\n\
 [advice]\n\
@@ -214,7 +217,7 @@ EOF\n\
 
 ARG HASH="#"
 RUN echo "\n\
-echo|cat >bin/git-ssh <<EOF\n\
+echo|cat >$USERHOME/bin/git-ssh <<EOF\n\
 $HASH!/bin/sh\n\
 \n\
 $HASH WORKS IN COMBINATION WITH GIT_SSH SESSION & [SSH] CLAUSE FROM GBL CONFIG\n\
