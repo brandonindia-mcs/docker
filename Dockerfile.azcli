@@ -2,13 +2,27 @@ FROM mcr.microsoft.com/azure-cli AS extensions
 CMD [ "/bin/bash" ]
 RUN apk update && apk upgrade
 RUN az config set extension.use_dynamic_install=yes_without_prompt
+
+FROM extensions as azext
 RUN az extension add --name azure-devops \
 && az extension add --name datafactory \
 && az extension add --name logic
-FROM extensions AS bottom
+
+FROM azext AS rootuser
 ARG THISUSER=root
 ARG HOMEDIR=
 ARG USERHOME=$HOMEDIR/$THISUSER
+
+FROM rootuser AS docker
+#RUN /usr/bin/dockerd
+RUN apk add docker
+RUN echo -e "\n"\
+"if ps -o pid,ppid,user,args|grep docker|grep -v \$\$ >/dev/null;then echo docker is running;else\n"\
+"echo Run this to start docker: '/usr/bin/dockerd&';fi\n"\
+\
+>>$USERHOME/.bashrc
+
+FROM docker AS bottom
 WORKDIR $USERHOME
 COPY assets.docker/bashrc.uuid /tmp/uuid
 RUN cat /tmp/uuid >>$USERHOME/.bashrc && rm -rf /tmp/uuid
@@ -42,12 +56,9 @@ RUN echo -e \
 >>$USERHOME/.bashrc
 
 RUN echo -e \
-"echo -e \"\\\naz login -t \\\${AZTENANT} \\ \n && az account set --subscription \"\\\${TENANT_SUBSCRIPTION_NAME}\"\\\n\"\n"\
+"echo -e \"\\\naz login -t \\\${AZTENANT} \\ \n && az account set --subscription \"\\\${AZSUB}\"\\\n\"\n"\
 "echo -e \"\ndefault super is: \n\t\${SUPER}\n\t\${AZTENANT}\n\t\${CERT}\"\n"\
 \
->>$USERHOME/.bashrc
-
-RUN date=$(date) && echo -e "echo -e \"\\\nLast Build Date: ${date}\""\
 >>$USERHOME/.bashrc
 
 FROM bottom as final
@@ -105,7 +116,6 @@ FROM scripts1 as scripts2
 
 ARG GIT_SSH=$USERHOME/bin/git-ssh
 ENV GIT_SSH=$GIT_SSH
-COPY assets.docker/.gitignore_global $USERHOME/.gitignore_global
 
 ARG myfname
 ARG mymname
@@ -123,7 +133,7 @@ RUN mkdir -p $USERHOME/bin\
 "[advice]\n"\
 "        addIgnoredFile = false\n"\
 "[core]\n"\
-"        excludesfile = ~/.gitignore_global\n"\
+"        excludesfile = ~/gitignore_global\n"\
 "        editor = vim\n"\
 "[ssh]\n"\
 "        identity = \$mykeypath\n"\
@@ -150,8 +160,10 @@ RUN echo -e "\n"\
 \
 >>$USERHOME/.bashrc
 
+COPY assets.docker/.gitignore_global $USERHOME/.gitignore_global
+
 RUN echo -e "\n"\
-"chmod 644 $USERHOME/.gitignore_global && chmod 755 \$GIT_SSH\n"\
+"chmod 644 $USERHOME/gitignore_global && chmod 755 \$GIT_SSH\n"\
 "function unindex { /usr/bin/git update-index --skip-worktree \"\${*}\"; }\n"\
 "function reindex { /usr/bin/git update-index --no-skip-worktree \"\${*}\"; }\n"\
 "function hardlink_working_directory { if [ ! -z \$1 ] && [ -d \$1 ];then src_dir=\$1;else echo pass source directory as arg1 && return \$LINENO; fi && for f in \$(/bin/ls -A);do echo -n \$f && rm \$f && ln \${src_dir}/\${f} && echo \" linked\";done ; }\n"\
@@ -160,4 +172,13 @@ RUN echo -e "\n"\
 
 COPY assets.docker/gitprompt-root.sh $USERHOME/gitprompt.sh
 
-#"\"\n\ndefault super is: \n\t\${SUPER}\n\t\${AZTENANT}\n\t\${CERT}\"\n"\
+FROM scripts2 as scripts3
+RUN echo -e "\n"\
+"alias aztenant=\"echo \${AZTENANT}:\${AZTENANTID}:\${AZSUB}:\${AZSUBSCRIPTION}\"\n"\
+"echo Azure settings: && aztenant\n"\
+\
+>>$USERHOME/.bashrc
+
+FROM scripts3 as lastbuild
+RUN date=$(date) && echo -e "echo -e \"\\\nLast Build Date: ${date}\""\
+>>$USERHOME/.bashrc
