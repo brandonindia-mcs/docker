@@ -160,7 +160,7 @@ RUN echo -e "\n"\
 \
 >>$USERHOME/.bashrc
 
-COPY assets.docker/.gitignore_global $USERHOME/.gitignore_global
+COPY assets.docker/.gitignore_global $USERHOME/gitignore_global
 
 RUN echo -e "\n"\
 "chmod 644 $USERHOME/gitignore_global && chmod 755 \$GIT_SSH\n"\
